@@ -39,13 +39,15 @@ async function carregarRemedios() {
     let lista = document.getElementById("lista-remedios");
     lista.innerHTML = "";
 
+    // 🔥 LISTA PARA NOTIFICAÇÃO
+    let listaRemedios = [];
+
     const querySnapshot = await getDocs(collection(db, "medicamentos"));
 
     querySnapshot.forEach((doc) => {
 
         let data = doc.data();
 
-        // MOSTRAR APENAS DO USUÁRIO LOGADO
         if(data.userId === auth.currentUser.uid){
 
             let div = document.createElement("div");
@@ -59,8 +61,18 @@ async function carregarRemedios() {
             `;
 
             lista.appendChild(div);
+
+            // 🔔 AQUI É A PARTE QUE FALTAVA
+            listaRemedios.push({
+                nome: data.nome,
+                horario: data.horario,
+                notificado: false
+            });
         }
     });
+
+    // 🔔 INICIA VERIFICAÇÃO DE HORÁRIO
+    verificarHorario(listaRemedios);
 }
 
 // carregar ao abrir a página
@@ -70,10 +82,13 @@ function marcarTomado(botao){
     botao.innerText = "Tomado ✔";
     botao.style.backgroundColor = "green";
 }
-// pedir permissão ao abrir
+
+// 🔔 pedir permissão
 Notification.requestPermission().then(permission => {
     console.log("Permissão:", permission);
 });
+
+// 🔔 mostrar notificação
 function mostrarNotificacao(remedio) {
 
     if(Notification.permission === "granted"){
@@ -82,11 +97,14 @@ function mostrarNotificacao(remedio) {
         });
     }
 }
+
+// 🔔 verificar horário
 function verificarHorario(remedios) {
 
     setInterval(() => {
 
         let agora = new Date();
+
         let horaAtual = agora.getHours().toString().padStart(2, '0') + ":" + 
                         agora.getMinutes().toString().padStart(2, '0');
 
@@ -95,11 +113,11 @@ function verificarHorario(remedios) {
             if(remedio.horario === horaAtual && !remedio.notificado){
 
                 mostrarNotificacao(remedio);
+                remedio.notificado = true;
 
-                remedio.notificado = true; // evita repetir
             }
 
         });
 
-    }, 60000); // verifica a cada 1 minuto
+    }, 60000);
 }
