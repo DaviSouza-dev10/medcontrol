@@ -2,7 +2,9 @@ import { db, auth } from "./firebase.js";
 import { 
     collection, 
     addDoc, 
-    getDocs 
+    getDocs,
+    doc,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 window.salvarRemedio = async function() {
@@ -57,17 +59,18 @@ async function carregarRemedios() {
                 <p><strong>${data.nome}</strong></p>
                 <p>Dose: ${data.dose}</p>
                 <p>Horário: ${data.horario}</p>
-                <button onclick="marcarTomado(this)">Marcar como tomado</button>
+                <button onclick="marcarTomado('${doc.id}', this)">Marcar como tomado</button>
             `;
 
             lista.appendChild(div);
 
             // 🔔 AQUI É A PARTE QUE FALTAVA
             listaRemedios.push({
+                id: doc.id,
                 nome: data.nome,
                 horario: data.horario,
                 notificado: false
-            });
+});
         }
     });
 
@@ -78,9 +81,24 @@ async function carregarRemedios() {
 // carregar ao abrir a página
 window.onload = carregarRemedios;
 
-function marcarTomado(botao){
-    botao.innerText = "Tomado ✔";
-    botao.style.backgroundColor = "green";
+window.marcarTomado = async function(id, botao){
+
+    try {
+        const ref = doc(db, "medicamentos", id);
+
+        await updateDoc(ref, {
+            tomado: true,
+            dataTomado: new Date().toLocaleString()
+        });
+
+        botao.innerText = "Tomado ✔";
+        botao.style.backgroundColor = "green";
+
+        alert("Remédio marcado como tomado!");
+
+    } catch (e) {
+        alert("Erro: " + e.message);
+    }
 }
 
 // 🔔 pedir permissão
@@ -113,6 +131,8 @@ function verificarHorario(remedios) {
             if(remedio.horario === horaAtual && !remedio.notificado){
 
                 mostrarNotificacao(remedio);
+                tocarSom();
+                
                 remedio.notificado = true;
 
             }
@@ -120,4 +140,13 @@ function verificarHorario(remedios) {
         });
 
     }, 60000);
+}
+alert("script carregou");
+
+Notification.requestPermission().then(permission => {
+    alert("Permissão: " + permission);
+});
+function tocarSom() {
+    let audio = new Audio("../assets/alerta.mp3.mp3");
+    audio.play();
 }
