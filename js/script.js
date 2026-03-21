@@ -1,23 +1,29 @@
 import { db, auth } from "./firebase.js";
-import { 
-    collection, 
-    addDoc, 
+import {
+    collection,
+    addDoc,
     getDocs,
     doc,
     updateDoc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-// =============================
-// SALVAR REMÉDIO
-// =============================
-window.salvarRemedio = async function() {
+let remediosMonitorados = [];
+let horarioIntervalId = null;
 
-    let nome = document.getElementById("nome").value;
-    let dose = document.getElementById("dose").value;
-    let horario = document.getElementById("horario").value;
+window.salvarRemedio = async function () {
+    const nome = document.getElementById("nome").value;
+    const dose = document.getElementById("dose").value;
+    const horario = document.getElementById("horario").value;
 
-    if(nome === "" || dose === "" || horario === ""){
+    if (nome === "" || dose === "" || horario === "") {
         alert("Preencha todos os campos!");
+        return;
+    }
+
+    if (!auth.currentUser) {
+        alert("Voce precisa estar logado para salvar um remedio.");
+        window.location.href = "login.html";
         return;
     }
 
@@ -30,42 +36,40 @@ window.salvarRemedio = async function() {
             tomado: false
         });
 
-        alert("Remédio salvo!");
-
-        carregarRemedios(); // atualiza lista
-
+        alert("Remedio salvo!");
+        carregarRemedios();
     } catch (e) {
         alert("Erro: " + e.message);
     }
-}
+};
 
-// =============================
-// LISTAR REMÉDIOS (PRINCIPAL)
-// =============================
 async function carregarRemedios() {
+    const lista = document.getElementById("lista-remedios");
+    if (!lista) return;
 
-    let lista = document.getElementById("lista-remedios");
     lista.innerHTML = "";
 
-    let listaRemedios = [];
+    const usuarioAtual = auth.currentUser;
+    if (!usuarioAtual) {
+        return;
+    }
 
+    const listaRemedios = [];
     const querySnapshot = await getDocs(collection(db, "medicamentos"));
 
     querySnapshot.forEach((docItem) => {
+        const data = docItem.data();
 
-        let data = docItem.data();
-
-       if(data.userId === auth.currentUser.uid && data.tomado !== true){
-
-            let div = document.createElement("div");
+        if (data.userId === usuarioAtual.uid && data.tomado !== true) {
+            const div = document.createElement("div");
             div.classList.add("remedio");
 
             div.innerHTML = `
                 <p><strong>${data.nome}</strong></p>
                 <p>Dose: ${data.dose}</p>
-                <p>Horário: ${data.horario}</p>
+                <p>Horario: ${data.horario}</p>
                 <button onclick="marcarTomado('${docItem.id}', this)">
-                    ${data.tomado ? "Tomado ✔" : "Marcar como tomado"}
+                    Marcar como tomado
                 </button>
             `;
 
@@ -80,13 +84,16 @@ async function carregarRemedios() {
         }
     });
 
-    verificarHorario(listaRemedios);
+    remediosMonitorados = listaRemedios;
+    iniciarVerificacaoHorario();
 }
 
-// =============================
-// MARCAR COMO TOMADO
-// =============================
-window.marcarTomado = async function(id, botao){
+window.marcarTomado = async function (id, botao) {
+    if (!auth.currentUser) {
+        alert("Sua sessao expirou. Entre novamente.");
+        window.location.href = "login.html";
+        return;
+    }
 
     try {
         const ref = doc(db, "medicamentos", id);
@@ -96,42 +103,41 @@ window.marcarTomado = async function(id, botao){
             dataTomado: new Date().toLocaleString()
         });
 
-        botao.innerText = "Tomado ✔";
+        botao.innerText = "Tomado";
         botao.style.backgroundColor = "green";
 
-        alert("Remédio marcado como tomado!");
+        alert("Remedio marcado como tomado!");
 
-        carregarHistorico(); // 🔥 atualiza histórico
-
+        carregarRemedios();
+        carregarHistorico();
     } catch (e) {
         alert("Erro: " + e.message);
     }
-}
+};
 
-// =============================
-// HISTÓRICO (SÓ TOMADOS)
-// =============================
 async function carregarHistorico() {
-
     const lista = document.getElementById("lista-registros");
-
-    if(!lista) return; // evita erro se não existir no HTML
+    if (!lista) return;
 
     lista.innerHTML = "";
+
+    const usuarioAtual = auth.currentUser;
+    if (!usuarioAtual) {
+        return;
+    }
 
     const querySnapshot = await getDocs(collection(db, "medicamentos"));
 
     querySnapshot.forEach((docItem) => {
         const data = docItem.data();
 
-        if(data.userId === auth.currentUser.uid && data.tomado === true){
-
+        if (data.userId === usuarioAtual.uid && data.tomado === true) {
             const item = document.createElement("li");
 
             item.innerHTML = `
-                <strong>${data.nome}</strong> - 
+                <strong>${data.nome}</strong> -
                 ${data.dataTomado || data.horario}
-                <span style="color: green;">(Tomado ✔)</span>
+                <span style="color: green;">(Tomado)</span>
             `;
 
             lista.appendChild(item);
@@ -139,56 +145,65 @@ async function carregarHistorico() {
     });
 }
 
-// =============================
-// NOTIFICAÇÕES
-// =============================
-Notification.requestPermission();
+if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+}
 
 function mostrarNotificacao(remedio) {
-    if(Notification.permission === "granted"){
-        new Notification("Hora do seu remédio!", {
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Hora do seu remedio!", {
             body: remedio.nome + " - " + remedio.horario
         });
     }
 }
 
 function verificarHorario(remedios) {
+    const agora = new Date();
+    const horaAtual =
+        agora.getHours().toString().padStart(2, "0") +
+        ":" +
+        agora.getMinutes().toString().padStart(2, "0");
 
-    setInterval(() => {
+    remedios.forEach((remedio) => {
+        if (remedio.horario === horaAtual && !remedio.notificado) {
+            mostrarNotificacao(remedio);
+            tocarSom();
+            remedio.notificado = true;
+        }
+    });
+}
 
-        let agora = new Date();
+function iniciarVerificacaoHorario() {
+    if (horarioIntervalId) {
+        clearInterval(horarioIntervalId);
+    }
 
-        let horaAtual = agora.getHours().toString().padStart(2, '0') + ":" + 
-                        agora.getMinutes().toString().padStart(2, '0');
-
-        remedios.forEach(remedio => {
-
-            if(remedio.horario === horaAtual && !remedio.notificado){
-
-                mostrarNotificacao(remedio);
-                tocarSom();
-                remedio.notificado = true;
-            }
-
-        });
-
+    verificarHorario(remediosMonitorados);
+    horarioIntervalId = setInterval(() => {
+        verificarHorario(remediosMonitorados);
     }, 60000);
 }
 
-// =============================
-// SOM
-// =============================
 function tocarSom() {
-    let audio = new Audio("../assets/alerta.mp3.mp3");
+    const audio = new Audio("assets/alerta.mp3.mp3");
     audio.play();
 }
 
-// =============================
-// INICIAR QUANDO USUÁRIO LOGAR
-// =============================
-auth.onAuthStateChanged(user => {
-    if(user){
+onAuthStateChanged(auth, (user) => {
+    if (user) {
         carregarRemedios();
         carregarHistorico();
+        return;
+    }
+
+    remediosMonitorados = [];
+
+    if (horarioIntervalId) {
+        clearInterval(horarioIntervalId);
+        horarioIntervalId = null;
+    }
+
+    if (window.location.pathname.endsWith("dashboard.html")) {
+        window.location.href = "login.html";
     }
 });
