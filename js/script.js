@@ -4,12 +4,22 @@ import {
     addDoc,
     getDocs,
     doc,
-    updateDoc
+    updateDoc,
+    deleteDoc,
+    query,
+    where
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
 let remediosMonitorados = [];
 let horarioIntervalId = null;
+
+function criarConsultaUsuario(userId) {
+    return query(
+        collection(db, "medicamentos"),
+        where("userId", "==", userId)
+    );
+}
 
 window.salvarRemedio = async function () {
     const nome = document.getElementById("nome").value;
@@ -36,6 +46,10 @@ window.salvarRemedio = async function () {
             tomado: false
         });
 
+        document.getElementById("nome").value = "";
+        document.getElementById("dose").value = "";
+        document.getElementById("horario").value = "";
+
         alert("Remedio salvo!");
         carregarRemedios();
     } catch (e) {
@@ -54,38 +68,60 @@ async function carregarRemedios() {
         return;
     }
 
-    const listaRemedios = [];
-    const querySnapshot = await getDocs(collection(db, "medicamentos"));
+    try {
+        const listaRemedios = [];
+        const querySnapshot = await getDocs(criarConsultaUsuario(usuarioAtual.uid));
 
-    querySnapshot.forEach((docItem) => {
-        const data = docItem.data();
+        querySnapshot.forEach((docItem) => {
+            const data = docItem.data();
 
-        if (data.userId === usuarioAtual.uid && data.tomado !== true) {
-            const div = document.createElement("div");
-            div.classList.add("remedio");
+            if (data.tomado !== true) {
+                const div = document.createElement("div");
+                div.classList.add("remedio");
 
-            div.innerHTML = `
-                <p><strong>${data.nome}</strong></p>
-                <p>Dose: ${data.dose}</p>
-                <p>Horario: ${data.horario}</p>
-                <button onclick="marcarTomado('${docItem.id}', this)">
-                    Marcar como tomado
-                </button>
-            `;
+                div.innerHTML = `
+    <p><strong>${data.nome}</strong></p>
+    <p>Dose: ${data.dose}</p>
+    <p>Horario: ${data.horario}</p>
 
-            lista.appendChild(div);
+    <button class="btn-tomado">Tomado</button>
+    <button class="btn-editar">Editar</button>
+    <button class="btn-excluir">Excluir</button>
+`;
 
-            listaRemedios.push({
-                id: docItem.id,
-                nome: data.nome,
-                horario: data.horario,
-                notificado: false
-            });
-        }
-    });
+                const botaoTomado = div.querySelector(".btn-tomado");
+                const botaoEditar = div.querySelector(".btn-editar");
+                const botaoExcluir = div.querySelector(".btn-excluir");
 
-    remediosMonitorados = listaRemedios;
-    iniciarVerificacaoHorario();
+                botaoTomado.addEventListener("click", () => {
+                    window.marcarTomado(docItem.id, botaoTomado);
+                });
+
+                botaoEditar.addEventListener("click", () => {
+                    window.editarRemedio(docItem.id, data.nome, data.dose, data.horario);
+                });
+
+                botaoExcluir.addEventListener("click", () => {
+                    window.excluirRemedio(docItem.id);
+                });
+
+                lista.appendChild(div);
+
+                listaRemedios.push({
+                    id: docItem.id,
+                    nome: data.nome,
+                    horario: data.horario,
+                    notificado: false
+                });
+            }
+        });
+
+        remediosMonitorados = listaRemedios;
+        iniciarVerificacaoHorario();
+    } catch (e) {
+        console.error("Erro ao carregar remedios:", e);
+        alert("Erro ao carregar os remedios: " + e.message);
+    }
 }
 
 window.marcarTomado = async function (id, botao) {
@@ -126,23 +162,28 @@ async function carregarHistorico() {
         return;
     }
 
-    const querySnapshot = await getDocs(collection(db, "medicamentos"));
+    try {
+        const querySnapshot = await getDocs(criarConsultaUsuario(usuarioAtual.uid));
 
-    querySnapshot.forEach((docItem) => {
-        const data = docItem.data();
+        querySnapshot.forEach((docItem) => {
+            const data = docItem.data();
 
-        if (data.userId === usuarioAtual.uid && data.tomado === true) {
-            const item = document.createElement("li");
+            if (data.tomado === true) {
+                const item = document.createElement("li");
 
-            item.innerHTML = `
+                item.innerHTML = `
                 <strong>${data.nome}</strong> -
                 ${data.dataTomado || data.horario}
                 <span style="color: green;">(Tomado)</span>
             `;
 
-            lista.appendChild(item);
-        }
-    });
+                lista.appendChild(item);
+            }
+        });
+    } catch (e) {
+        console.error("Erro ao carregar historico:", e);
+        alert("Erro ao carregar o historico: " + e.message);
+    }
 }
 
 if ("Notification" in window && Notification.permission === "default") {
@@ -207,3 +248,47 @@ onAuthStateChanged(auth, (user) => {
         window.location.href = "login.html";
     }
 });
+
+window.excluirRemedio = async function (id) {
+    const confirmar = confirm("Tem certeza que deseja excluir?");
+
+    if (!confirmar) return;
+
+    try {
+        const ref = doc(db, "medicamentos", id);
+        await deleteDoc(ref);
+
+        alert("Remedio excluido!");
+        carregarRemedios();
+        carregarHistorico();
+    } catch (e) {
+        alert("Erro: " + e.message);
+    }
+};
+
+window.editarRemedio = async function (id, nomeAtual, doseAtual, horarioAtual) {
+    const novoNome = prompt("Novo nome:", nomeAtual);
+    const novaDose = prompt("Nova dose:", doseAtual);
+    const novoHorario = prompt("Novo horario:", horarioAtual);
+
+    if (!novoNome || !novaDose || !novoHorario) {
+        alert("Edicao cancelada!");
+        return;
+    }
+
+    try {
+        const ref = doc(db, "medicamentos", id);
+
+        await updateDoc(ref, {
+            nome: novoNome,
+            dose: novaDose,
+            horario: novoHorario
+        });
+
+        alert("Remedio atualizado!");
+        carregarRemedios();
+        carregarHistorico();
+    } catch (e) {
+        alert("Erro: " + e.message);
+    }
+};
