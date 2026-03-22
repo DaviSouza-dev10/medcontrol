@@ -26,10 +26,20 @@ window.salvarRemedio = async function () {
     const dose = document.getElementById("dose").value;
     const horario = document.getElementById("horario").value;
 
-    if (nome === "" || dose === "" || horario === "") {
-        alert("Preencha todos os campos!");
-        return;
-    }
+    if(nome.trim() === "" || dose.trim() === "" || horario === ""){
+    alert("Preencha todos os campos!");
+    return;
+}
+
+if(nome.length < 2){
+    alert("Nome do remédio muito curto!");
+    return;
+}
+
+if(isNaN(dose)){
+    alert("Dose deve ser um número (ex: 500)");
+    return;
+}
 
     if (!auth.currentUser) {
         alert("Voce precisa estar logado para salvar um remedio.");

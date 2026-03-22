@@ -4,16 +4,35 @@ import {
     signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-window.cadastrar = function () {
-    const email = document.getElementById("email").value;
-    const senha = document.getElementById("senha").value;
-    const confirmarSenhaInput = document.getElementById("confirmarSenha");
+window.cadastrar = function() {
 
-    if (confirmarSenhaInput && senha !== confirmarSenhaInput.value) {
-        alert("As senhas nao coincidem.");
+    let email = document.getElementById("email").value.trim();
+    let senha = document.getElementById("senha").value.trim();
+    let confirmarSenha = document.getElementById("confirmarSenha").value.trim();
+
+    // 🔴 VALIDAÇÕES
+
+    if(email === "" || senha === "" || confirmarSenha === ""){
+        alert("Preencha todos os campos!");
         return;
     }
 
+    if(!email.includes("@") || !email.includes(".")){
+        alert("Digite um email válido!");
+        return;
+    }
+
+    if(senha.length < 6){
+        alert("A senha deve ter pelo menos 6 caracteres!");
+        return;
+    }
+
+    if(senha !== confirmarSenha){
+        alert("As senhas não coincidem!");
+        return;
+    }
+
+    // ✅ SE PASSAR, CADASTRA
     createUserWithEmailAndPassword(auth, email, senha)
         .then(() => {
             alert("Conta criada com sucesso!");
@@ -22,11 +41,17 @@ window.cadastrar = function () {
         .catch((error) => {
             alert("Erro: " + error.message);
         });
-};
+}
 
-window.login = function () {
-    const email = document.getElementById("email").value;
-    const senha = document.getElementById("senha").value;
+window.login = function() {
+
+    let email = document.getElementById("email").value.trim();
+    let senha = document.getElementById("senha").value.trim();
+
+    if(email === "" || senha === ""){
+        alert("Preencha todos os campos!");
+        return;
+    }
 
     signInWithEmailAndPassword(auth, email, senha)
         .then(() => {
@@ -34,6 +59,6 @@ window.login = function () {
             window.location.href = "dashboard.html";
         })
         .catch((error) => {
-            alert("Erro: " + error.message);
+            alert("Email ou senha inválidos!");
         });
-};
+}
