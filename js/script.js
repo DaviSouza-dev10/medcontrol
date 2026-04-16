@@ -21,25 +21,43 @@ function criarConsultaUsuario(userId) {
     );
 }
 
+function normalizarRemedio(nome, dose, horario) {
+    return {
+        nome: nome.trim(),
+        dose: dose.trim(),
+        horario
+    };
+}
+
+function validarRemedio(nome, dose, horario) {
+    if (nome === "" || dose === "" || horario === "") {
+        return "Preencha todos os campos!";
+    }
+
+    if (nome.length < 2) {
+        return "Nome do remedio muito curto!";
+    }
+
+    return null;
+}
+
 window.salvarRemedio = async function () {
-    const nome = document.getElementById("nome").value;
-    const dose = document.getElementById("dose").value;
-    const horario = document.getElementById("horario").value;
+    const remedio = normalizarRemedio(
+        document.getElementById("nome").value,
+        document.getElementById("dose").value,
+        document.getElementById("horario").value
+    );
 
-    if(nome.trim() === "" || dose.trim() === "" || horario === ""){
-    alert("Preencha todos os campos!");
-    return;
-}
+    const erroValidacao = validarRemedio(
+        remedio.nome,
+        remedio.dose,
+        remedio.horario
+    );
 
-if(nome.length < 2){
-    alert("Nome do remédio muito curto!");
-    return;
-}
-
-if(isNaN(dose)){
-    alert("Dose deve ser um número (ex: 500)");
-    return;
-}
+    if (erroValidacao) {
+        alert(erroValidacao);
+        return;
+    }
 
     if (!auth.currentUser) {
         alert("Voce precisa estar logado para salvar um remedio.");
@@ -49,9 +67,9 @@ if(isNaN(dose)){
 
     try {
         await addDoc(collection(db, "medicamentos"), {
-            nome,
-            dose,
-            horario,
+            nome: remedio.nome,
+            dose: remedio.dose,
+            horario: remedio.horario,
             userId: auth.currentUser.uid,
             tomado: false
         });
@@ -81,8 +99,13 @@ async function carregarRemedios() {
     try {
         const listaRemedios = [];
         const querySnapshot = await getDocs(criarConsultaUsuario(usuarioAtual.uid));
+        const documentos = querySnapshot.docs.sort((a, b) => {
+            const horarioA = a.data().horario || "";
+            const horarioB = b.data().horario || "";
+            return horarioA.localeCompare(horarioB);
+        });
 
-        querySnapshot.forEach((docItem) => {
+        documentos.forEach((docItem) => {
             const data = docItem.data();
 
             if (data.tomado !== true) {
@@ -174,8 +197,13 @@ async function carregarHistorico() {
 
     try {
         const querySnapshot = await getDocs(criarConsultaUsuario(usuarioAtual.uid));
+        const documentos = querySnapshot.docs.sort((a, b) => {
+            const valorA = a.data().dataTomado || a.data().horario || "";
+            const valorB = b.data().dataTomado || b.data().horario || "";
+            return valorB.localeCompare(valorA);
+        });
 
-        querySnapshot.forEach((docItem) => {
+        documentos.forEach((docItem) => {
             const data = docItem.data();
 
             if (data.tomado === true) {
@@ -237,7 +265,9 @@ function iniciarVerificacaoHorario() {
 
 function tocarSom() {
     const audio = new Audio("assets/alerta.mp3.mp3");
-    audio.play();
+    audio.play().catch(() => {
+        console.warn("Nao foi possivel tocar o audio de notificacao.");
+    });
 }
 
 onAuthStateChanged(auth, (user) => {
@@ -281,8 +311,25 @@ window.editarRemedio = async function (id, nomeAtual, doseAtual, horarioAtual) {
     const novaDose = prompt("Nova dose:", doseAtual);
     const novoHorario = prompt("Novo horario:", horarioAtual);
 
-    if (!novoNome || !novaDose || !novoHorario) {
+    if (novoNome === null || novaDose === null || novoHorario === null) {
         alert("Edicao cancelada!");
+        return;
+    }
+
+    const remedioAtualizado = normalizarRemedio(
+        novoNome,
+        novaDose,
+        novoHorario
+    );
+
+    const erroValidacao = validarRemedio(
+        remedioAtualizado.nome,
+        remedioAtualizado.dose,
+        remedioAtualizado.horario
+    );
+
+    if (erroValidacao) {
+        alert(erroValidacao);
         return;
     }
 
@@ -290,9 +337,9 @@ window.editarRemedio = async function (id, nomeAtual, doseAtual, horarioAtual) {
         const ref = doc(db, "medicamentos", id);
 
         await updateDoc(ref, {
-            nome: novoNome,
-            dose: novaDose,
-            horario: novoHorario
+            nome: remedioAtualizado.nome,
+            dose: remedioAtualizado.dose,
+            horario: remedioAtualizado.horario
         });
 
         alert("Remedio atualizado!");
