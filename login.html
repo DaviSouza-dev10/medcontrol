@@ -3,26 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar</title>
+    <meta name="theme-color" content="#f8f6f1">
+    <title>Entrar | MedControl</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <main class="auth-shell">
+        <section class="auth-card">
+            <a class="brand" href="index.html">
+                <span class="brand-badge">+</span>
+                <span>MedControl</span>
+            </a>
 
-    <div class="container">
+            <h1>Bem-vindo de volta</h1>
+            <p class="helper-text">
+                Entre para consultar os remedios cadastrados, acompanhar o historico e manter os lembretes organizados.
+            </p>
 
-        <h1>Entrar</h1>
+            <div class="auth-form">
+                <input type="email" placeholder="Digite seu email" id="email">
+                <input type="password" placeholder="Digite sua senha" id="senha">
+                <button class="primary-btn" onclick="login()">Entrar</button>
+            </div>
 
-        <input type="email" placeholder="Digite seu email" id="email"><br><br>
+            <p class="auth-footer">
+                Nao tem conta? <a href="cadastro.html">Criar conta</a>
+            </p>
+        </section>
+    </main>
 
-        <input type="password" placeholder="Digite sua senha" id="senha"><br><br>
-
-        <button onclick="login()">Entrar</button>
-
-        <p>Nao tem conta?</p>
-        <a href="cadastro.html">Criar conta</a>
-
-    </div>
-<script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/pwa.js"></script>
+    <script type="module" src="js/auth.js"></script>
 </body>
 </html>

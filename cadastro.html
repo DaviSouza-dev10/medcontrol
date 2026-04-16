@@ -3,28 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Conta</title>
+    <meta name="theme-color" content="#f8f6f1">
+    <title>Criar Conta | MedControl</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <main class="auth-shell">
+        <section class="auth-card">
+            <a class="brand" href="index.html">
+                <span class="brand-badge">+</span>
+                <span>MedControl</span>
+            </a>
 
-    <div class="container">
+            <h1>Crie sua conta</h1>
+            <p class="helper-text">
+                Monte uma rotina mais tranquila para acompanhar horarios, doses e historico dos remedios.
+            </p>
 
-        <h1>Criar Conta</h1>
+            <div class="auth-form">
+                <input type="email" placeholder="Digite seu email" id="email">
+                <input type="password" placeholder="Digite sua senha" id="senha">
+                <input type="password" placeholder="Confirme sua senha" id="confirmarSenha">
+                <button class="primary-btn" onclick="cadastrar()">Cadastrar</button>
+            </div>
 
-        <input type="email" placeholder="Digite seu email" id="email"><br><br>
+            <p class="auth-footer">
+                Ja tem conta? <a href="login.html">Entrar</a>
+            </p>
+        </section>
+    </main>
 
-        <input type="password" placeholder="Digite sua senha" id="senha"><br><br>
-
-        <input type="password" placeholder="Confirme sua senha" id="confirmarSenha"><br><br>
-
-        <button onclick="cadastrar()">Cadastrar</button>
-
-        <p>Ja tem conta?</p>
-        <a href="login.html">Entrar</a>
-
-    </div>
-<script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/pwa.js"></script>
+    <script type="module" src="js/auth.js"></script>
 </body>
 </html>

@@ -41,6 +41,71 @@ function validarRemedio(nome, dose, horario) {
     return null;
 }
 
+function atualizarStatusNotificacao() {
+    const status = document.getElementById("notification-status");
+    const botao = document.getElementById("btn-notificacoes");
+
+    if (!status || !botao) return;
+
+    if (!("Notification" in window)) {
+        status.textContent = "Este navegador nao suporta notificacoes.";
+        status.className = "notification-state blocked";
+        botao.disabled = true;
+        botao.textContent = "Indisponivel";
+        return;
+    }
+
+    if (Notification.permission === "granted") {
+        status.textContent = "Permissao liberada para notificacoes.";
+        status.className = "notification-state active";
+        botao.textContent = "Notificacoes ativas";
+        botao.disabled = true;
+        return;
+    }
+
+    if (Notification.permission === "denied") {
+        status.textContent = "Permissao bloqueada. Ative manualmente nas configuracoes do navegador.";
+        status.className = "notification-state blocked";
+        botao.textContent = "Permissao bloqueada";
+        botao.disabled = true;
+        return;
+    }
+
+    status.textContent = "Permissao ainda nao concedida.";
+    status.className = "notification-state pending";
+    botao.textContent = "Ativar notificacoes";
+    botao.disabled = false;
+}
+
+async function solicitarPermissaoNotificacao() {
+    if (!("Notification" in window)) {
+        alert("Este navegador nao suporta notificacoes.");
+        return;
+    }
+
+    const permissao = await Notification.requestPermission();
+    atualizarStatusNotificacao();
+
+    if (permissao === "granted") {
+        new Notification("Notificacoes ativadas", {
+            body: "Voce recebera lembretes quando houver remedios no horario cadastrado."
+        });
+    }
+}
+
+function atualizarResumo(ativos, historico) {
+    const contadorAtivos = document.getElementById("contador-ativos");
+    const contadorHistorico = document.getElementById("contador-historico");
+
+    if (contadorAtivos && typeof ativos === "number") {
+        contadorAtivos.textContent = String(ativos);
+    }
+
+    if (contadorHistorico && typeof historico === "number") {
+        contadorHistorico.textContent = String(historico);
+    }
+}
+
 window.salvarRemedio = async function () {
     const remedio = normalizarRemedio(
         document.getElementById("nome").value,
@@ -80,6 +145,7 @@ window.salvarRemedio = async function () {
 
         alert("Remedio salvo!");
         carregarRemedios();
+        carregarHistorico();
     } catch (e) {
         alert("Erro: " + e.message);
     }
@@ -109,22 +175,31 @@ async function carregarRemedios() {
             const data = docItem.data();
 
             if (data.tomado !== true) {
-                const div = document.createElement("div");
-                div.classList.add("remedio");
+                const card = document.createElement("article");
+                card.className = "med-card";
 
-                div.innerHTML = `
-    <p><strong>${data.nome}</strong></p>
-    <p>Dose: ${data.dose}</p>
-    <p>Horario: ${data.horario}</p>
+                card.innerHTML = `
+                    <div class="med-card-head">
+                        <div>
+                            <h3>${data.nome}</h3>
+                            <p class="muted">Lembrete ativo para acompanhar sua rotina.</p>
+                        </div>
+                        <span class="tag">${data.horario}</span>
+                    </div>
+                    <div class="med-meta">
+                        <span class="tag">Dose: ${data.dose}</span>
+                        <span class="tag">Horario: ${data.horario}</span>
+                    </div>
+                    <div class="med-actions">
+                        <button class="primary-btn btn-tomado action-success" type="button">Tomado</button>
+                        <button class="secondary-btn btn-editar action-soft" type="button">Editar</button>
+                        <button class="ghost-btn btn-excluir action-danger" type="button">Excluir</button>
+                    </div>
+                `;
 
-    <button class="btn-tomado">Tomado</button>
-    <button class="btn-editar">Editar</button>
-    <button class="btn-excluir">Excluir</button>
-`;
-
-                const botaoTomado = div.querySelector(".btn-tomado");
-                const botaoEditar = div.querySelector(".btn-editar");
-                const botaoExcluir = div.querySelector(".btn-excluir");
+                const botaoTomado = card.querySelector(".btn-tomado");
+                const botaoEditar = card.querySelector(".btn-editar");
+                const botaoExcluir = card.querySelector(".btn-excluir");
 
                 botaoTomado.addEventListener("click", () => {
                     window.marcarTomado(docItem.id, botaoTomado);
@@ -138,7 +213,7 @@ async function carregarRemedios() {
                     window.excluirRemedio(docItem.id);
                 });
 
-                lista.appendChild(div);
+                lista.appendChild(card);
 
                 listaRemedios.push({
                     id: docItem.id,
@@ -149,7 +224,16 @@ async function carregarRemedios() {
             }
         });
 
+        if (listaRemedios.length === 0) {
+            lista.innerHTML = `
+                <div class="empty-state">
+                    Nenhum remedio ativo por enquanto. Adicione o primeiro horario para montar sua rotina.
+                </div>
+            `;
+        }
+
         remediosMonitorados = listaRemedios;
+        atualizarResumo(listaRemedios.length, null);
         iniciarVerificacaoHorario();
     } catch (e) {
         console.error("Erro ao carregar remedios:", e);
@@ -169,11 +253,11 @@ window.marcarTomado = async function (id, botao) {
 
         await updateDoc(ref, {
             tomado: true,
-            dataTomado: new Date().toLocaleString()
+            dataTomado: new Date().toLocaleString("pt-BR")
         });
 
-        botao.innerText = "Tomado";
-        botao.style.backgroundColor = "green";
+        botao.textContent = "Tomado";
+        botao.disabled = true;
 
         alert("Remedio marcado como tomado!");
 
@@ -203,35 +287,51 @@ async function carregarHistorico() {
             return valorB.localeCompare(valorA);
         });
 
+        let totalHistorico = 0;
+
         documentos.forEach((docItem) => {
             const data = docItem.data();
 
             if (data.tomado === true) {
-                const item = document.createElement("li");
+                totalHistorico += 1;
 
+                const item = document.createElement("article");
+                item.className = "history-card";
                 item.innerHTML = `
-                <strong>${data.nome}</strong> -
-                ${data.dataTomado || data.horario}
-                <span style="color: green;">(Tomado)</span>
-            `;
+                    <div class="history-item">
+                        <div>
+                            <strong>${data.nome}</strong>
+                            <p class="muted">Dose: ${data.dose}</p>
+                        </div>
+                        <div class="tag">${data.dataTomado || data.horario}</div>
+                    </div>
+                `;
 
                 lista.appendChild(item);
             }
         });
+
+        if (totalHistorico === 0) {
+            lista.innerHTML = `
+                <div class="empty-state">
+                    O historico ainda esta vazio. Assim que voce marcar um remedio como tomado, ele aparece aqui.
+                </div>
+            `;
+        }
+
+        atualizarResumo(remediosMonitorados.length, totalHistorico);
     } catch (e) {
         console.error("Erro ao carregar historico:", e);
         alert("Erro ao carregar o historico: " + e.message);
     }
 }
 
-if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission();
-}
-
 function mostrarNotificacao(remedio) {
     if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Hora do seu remedio!", {
-            body: remedio.nome + " - " + remedio.horario
+        new Notification("Hora do seu remedio", {
+            body: `${remedio.nome} - ${remedio.horario}`,
+            icon: "assets/icon-192.svg",
+            badge: "assets/icon-192.svg"
         });
     }
 }
@@ -269,25 +369,6 @@ function tocarSom() {
         console.warn("Nao foi possivel tocar o audio de notificacao.");
     });
 }
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        carregarRemedios();
-        carregarHistorico();
-        return;
-    }
-
-    remediosMonitorados = [];
-
-    if (horarioIntervalId) {
-        clearInterval(horarioIntervalId);
-        horarioIntervalId = null;
-    }
-
-    if (window.location.pathname.endsWith("dashboard.html")) {
-        window.location.href = "login.html";
-    }
-});
 
 window.excluirRemedio = async function (id) {
     const confirmar = confirm("Tem certeza que deseja excluir?");
@@ -349,3 +430,31 @@ window.editarRemedio = async function (id, nomeAtual, doseAtual, horarioAtual) {
         alert("Erro: " + e.message);
     }
 };
+
+document.getElementById("btn-notificacoes")?.addEventListener("click", () => {
+    solicitarPermissaoNotificacao();
+});
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        atualizarStatusNotificacao();
+        carregarRemedios();
+        carregarHistorico();
+        return;
+    }
+
+    remediosMonitorados = [];
+    atualizarStatusNotificacao();
+    atualizarResumo(0, 0);
+
+    if (horarioIntervalId) {
+        clearInterval(horarioIntervalId);
+        horarioIntervalId = null;
+    }
+
+    if (window.location.pathname.endsWith("dashboard.html")) {
+        window.location.href = "login.html";
+    }
+});
+
+atualizarStatusNotificacao();

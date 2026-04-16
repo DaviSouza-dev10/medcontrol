@@ -3,37 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel</title>
+    <meta name="theme-color" content="#f8f6f1">
+    <title>Painel | MedControl</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <main class="page dashboard-shell">
+        <header class="dashboard-header">
+            <div class="dashboard-title">
+                <span class="pill">Rotina organizada e facil de acompanhar</span>
+                <h1>Seus remedios em um painel leve e pratico</h1>
+                <p class="helper-text">
+                    Cadastre horarios, acompanhe o que ainda falta tomar e confira o historico sem perder o contexto.
+                </p>
+            </div>
 
-    <div class="container">
+            <aside class="notification-card">
+                <strong class="section-title">Notificacoes</strong>
+                <p class="helper-text">
+                    Ative as notificacoes do navegador para receber os lembretes enquanto o app estiver em uso ou instalado.
+                </p>
+                <div class="actions-row">
+                    <button id="btn-notificacoes" class="secondary-btn" type="button">Ativar notificacoes</button>
+                    <button id="btn-instalar" class="ghost-btn" type="button">Instalar app</button>
+                </div>
+                <div id="notification-status" class="notification-state pending">Verificando permissao...</div>
+                <p id="install-tip" class="install-tip">
+                    Se aparecer a opcao de instalar no navegador, vale adicionar o app na tela inicial do celular.
+                </p>
+            </aside>
+        </header>
 
-        <h1>Seus Remedios</h1>
+        <section class="stats-grid">
+            <article class="stat-card">
+                <strong>Remedios ativos</strong>
+                <span id="contador-ativos" class="stat-number">0</span>
+                <span class="stat-note">Itens aguardando serem tomados</span>
+            </article>
 
-        <div class="form-remedio">
+            <article class="stat-card">
+                <strong>Historico</strong>
+                <span id="contador-historico" class="stat-number">0</span>
+                <span class="stat-note">Registros ja marcados como tomados</span>
+            </article>
 
-            <input type="text" id="nome" placeholder="Nome do remedio"><br><br>
+            <article class="stat-card">
+                <strong>Lembrete rapido</strong>
+                <span class="stat-note">
+                    Para alertas com o app realmente fechado, o proximo passo sera conectar push com servidor.
+                </span>
+            </article>
+        </section>
 
-            <input type="text" id="dose" placeholder="Dose (ex: 500mg)"><br><br>
+        <section class="panel-grid">
+            <section class="panel">
+                <h2>Novo remedio</h2>
+                <p class="helper-text">
+                    Adicione um horario e acompanhe tudo no mesmo painel.
+                </p>
 
-            <input type="time" id="horario"><br><br>
+                <div class="form-grid">
+                    <input type="text" id="nome" placeholder="Nome do remedio">
+                    <input type="text" id="dose" placeholder="Dose (ex: 500mg)">
+                    <input type="time" id="horario">
+                </div>
 
-            <button onclick="salvarRemedio()">Salvar</button>
+                <div class="actions-row">
+                    <button class="primary-btn" onclick="salvarRemedio()">Salvar remedio</button>
+                </div>
+            </section>
 
-        </div>
+            <aside class="panel">
+                <h2>Como usar melhor</h2>
+                <div class="med-list">
+                    <div class="tip-card">
+                        <strong>1. Cadastre um horario claro</strong>
+                        <span class="muted">Exemplos: 08:00, 14:30 ou 21:00.</span>
+                    </div>
+                    <div class="tip-card">
+                        <strong>2. Marque como tomado</strong>
+                        <span class="muted">Assim o item sai da lista principal e vai para o historico.</span>
+                    </div>
+                    <div class="tip-card">
+                        <strong>3. Instale o app</strong>
+                        <span class="muted">No celular, a experiencia fica mais pratica quando o app vira atalho na tela inicial.</span>
+                    </div>
+                </div>
+            </aside>
+        </section>
 
-        <div id="lista-remedios"></div>
+        <section class="panel">
+            <h2>Remedios ativos</h2>
+            <p class="helper-text">Aqui ficam os remedios ainda pendentes para o horario cadastrado.</p>
+            <div id="lista-remedios" class="med-list"></div>
+        </section>
 
-    </div>
+        <section class="panel">
+            <h2>Historico de medicamentos</h2>
+            <p class="helper-text">Consulte o que ja foi marcado como tomado.</p>
+            <div id="lista-registros" class="history-list"></div>
+        </section>
+    </main>
 
-    <div id="historico">
-        <h2>Historico de Medicamentos</h2>
-        <ul id="lista-registros"></ul>
-    </div>
-
+    <script type="module" src="js/pwa.js"></script>
     <script type="module" src="js/script.js"></script>
 </body>
 </html>

@@ -1,0 +1,23 @@
+{
+  "name": "MedControl",
+  "short_name": "MedControl",
+  "description": "Organize remedios, acompanhe historico e mantenha lembretes visiveis.",
+  "start_url": "./dashboard.html",
+  "display": "standalone",
+  "background_color": "#f8f6f1",
+  "theme_color": "#f8f6f1",
+  "icons": [
+    {
+      "src": "./assets/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -3,25 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f8f6f1">
     <title>MedControl</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <main class="page">
+        <header class="topbar">
+            <a class="brand" href="index.html">
+                <span class="brand-badge">+</span>
+                <span>MedControl</span>
+            </a>
 
-    <h1 id="titulo">MedControl</h1>
+            <nav class="nav-links">
+                <a class="nav-link" href="cadastro.html">Criar conta</a>
+                <a class="nav-link" href="login.html">Entrar</a>
+            </nav>
+        </header>
 
-    <p>
-        Organize seus medicamentos e receba lembretes para não esquecer de tomar seus remédios.
-    </p>
+        <section class="hero">
+            <article class="hero-card">
+                <span class="hero-kicker">Rotina mais leve para quem precisa lembrar dos remedios</span>
+                <h1>Organize horarios, acompanhe tomas e reduza esquecimentos.</h1>
+                <p>
+                    O MedControl foi pensado para manter a rotina simples: cadastrar o remedio,
+                    ver o que falta tomar e acompanhar o historico sem telas confusas.
+                </p>
 
-    <a href="cadastro.html">
-        <button>Criar conta</button>
-    </a>
+                <div class="hero-actions">
+                    <a class="primary-btn" href="cadastro.html">Comecar agora</a>
+                    <a class="secondary-btn" href="login.html">Ja tenho conta</a>
+                    <button class="ghost-btn" id="btn-instalar" type="button">Instalar app</button>
+                </div>
 
-    <a href="login.html">
-        <button>Entrar</button>
-    </a>
+                <p class="footer-note">
+                    Dica: o app pode ser instalado na tela inicial do celular para ficar mais facil de abrir.
+                </p>
+            </article>
 
+            <aside class="hero-side">
+                <article class="tip-card">
+                    <strong>Cadastro rapido</strong>
+                    <span class="muted">Nome, dose e horario em poucos segundos.</span>
+                </article>
+
+                <article class="tip-card">
+                    <strong>Historico visivel</strong>
+                    <span class="muted">Veja quais remedios ja foram tomados ao longo do dia.</span>
+                </article>
+
+                <article class="tip-card">
+                    <strong>Base para PWA</strong>
+                    <span class="muted">O projeto agora ja tem manifest e service worker para evoluir as notificacoes.</span>
+                </article>
+            </aside>
+        </section>
+
+        <section class="feature-grid">
+            <article class="stat-card">
+                <strong>Painel simples</strong>
+                <span class="stat-note">Visual limpo para acessar remedios ativos e historico no mesmo lugar.</span>
+            </article>
+
+            <article class="stat-card">
+                <strong>Alertas do navegador</strong>
+                <span class="stat-note">Quando a permissao estiver ativa, o sistema pode avisar nos horarios cadastrados.</span>
+            </article>
+
+            <article class="stat-card">
+                <strong>Conta individual</strong>
+                <span class="stat-note">Cada usuario ve apenas os proprios medicamentos no Firestore.</span>
+            </article>
+        </section>
+    </main>
+
+    <script type="module" src="js/pwa.js"></script>
 </body>
 </html>

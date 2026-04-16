@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="MedControl">
+  <rect width="192" height="192" rx="48" fill="#f8f6f1"/>
+  <rect x="18" y="18" width="156" height="156" rx="42" fill="#ffffff"/>
+  <circle cx="96" cy="96" r="58" fill="#dff0ea"/>
+  <path d="M96 52c5.5 0 10 4.5 10 10v24h24c5.5 0 10 4.5 10 10s-4.5 10-10 10h-24v24c0 5.5-4.5 10-10 10s-10-4.5-10-10v-24H62c-5.5 0-10-4.5-10-10s4.5-10 10-10h24V62c0-5.5 4.5-10 10-10z" fill="#6fae98"/>
+  <circle cx="140" cy="58" r="18" fill="#f4d3c7"/>
+</svg>
